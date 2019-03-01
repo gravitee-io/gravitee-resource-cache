@@ -20,6 +20,7 @@ import io.gravitee.resource.cache.configuration.CacheResourceConfiguration;
 import io.gravitee.resource.cache.ehcache.EhCacheDelegate;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.config.CacheConfiguration;
+import net.sf.ehcache.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,17 +39,19 @@ public class CacheResource extends AbstractConfigurableResource<CacheResourceCon
     protected void doStart() throws Exception {
         super.doStart();
 
-        cacheManager = new CacheManager();
-
-        CacheConfiguration configuration = new CacheConfiguration();
-        configuration.setEternal(false);
-        configuration.setTimeToIdleSeconds(configuration().getTimeToIdleSeconds());
-        configuration.setTimeToLiveSeconds(configuration().getTimeToLiveSeconds());
-        configuration.setMaxEntriesLocalHeap(configuration().getMaxEntriesLocalHeap());
+        Configuration configuration = new Configuration();
         configuration.setName(configuration().getName());
+        cacheManager = new CacheManager(configuration);
+
+        CacheConfiguration cacheConfiguration = new CacheConfiguration();
+        cacheConfiguration.setEternal(false);
+        cacheConfiguration.setTimeToIdleSeconds(configuration().getTimeToIdleSeconds());
+        cacheConfiguration.setTimeToLiveSeconds(configuration().getTimeToLiveSeconds());
+        cacheConfiguration.setMaxEntriesLocalHeap(configuration().getMaxEntriesLocalHeap());
+        cacheConfiguration.setName(configuration().getName());
 
         LOGGER.info("Create a new cache: {}", configuration().getName());
-        net.sf.ehcache.Cache ehCache = new net.sf.ehcache.Cache(configuration);
+        net.sf.ehcache.Cache ehCache = new net.sf.ehcache.Cache(cacheConfiguration);
         cache = new EhCacheDelegate(ehCache);
         cacheManager.addCache(ehCache);
     }
