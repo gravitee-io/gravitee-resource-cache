@@ -20,7 +20,6 @@ package io.gravitee.resource.cache;
  * @author GraviteeSource Team
  */
 public interface Cache {
-
     String getName();
 
     Object getNativeCache();

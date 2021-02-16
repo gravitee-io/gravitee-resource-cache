@@ -12,7 +12,7 @@ It means that the cache is initialized when the API is starting and released whe
 
 This cache is responsible to store HTTP response from the backend to avoid subsequent calls.
 
-Current implementation of the cache resource is based on http://www.ehcache.org/[EHCache].
+Current implementation of the cache resource is based on https://hazelcast.com/[Hazelcast].
 
 == Configuration
 

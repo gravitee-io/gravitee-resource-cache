@@ -15,58 +15,56 @@
  */
 package io.gravitee.resource.cache;
 
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.replicatedmap.ReplicatedMap;
+import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.resource.api.AbstractConfigurableResource;
 import io.gravitee.resource.cache.configuration.CacheResourceConfiguration;
-import io.gravitee.resource.cache.ehcache.EhCacheDelegate;
-import net.sf.ehcache.CacheManager;
-import net.sf.ehcache.config.CacheConfiguration;
-import net.sf.ehcache.config.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.gravitee.resource.cache.hazelcast.HazelcastDelegate;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 
 /**
  * @author David BRASSELY (david at gravitee.io)
  * @author GraviteeSource Team
  */
-public class CacheResource extends AbstractConfigurableResource<CacheResourceConfiguration> {
+public class CacheResource extends AbstractConfigurableResource<CacheResourceConfiguration> implements ApplicationContextAware {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(CacheResource.class);
+    private static final char KEY_SEPARATOR = '_';
 
-    private CacheManager cacheManager;
-    private Cache cache;
+    private HazelcastInstance hazelcastInstance;
+    private ApplicationContext applicationContext;
+
+    /**
+     * Generate a unique identifier for the resource cache.
+     *
+     * @param executionContext
+     * @return
+     */
+    private String hash(ExecutionContext executionContext) {
+        StringBuilder sb = new StringBuilder();
+        Object attribute = executionContext.getAttribute(ExecutionContext.ATTR_API);
+        if (attribute != null) {
+            sb.append(attribute).append(KEY_SEPARATOR);
+        }
+        sb.append(configuration().getName());
+        return sb.toString();
+    }
 
     @Override
     protected void doStart() throws Exception {
         super.doStart();
+        hazelcastInstance = this.applicationContext.getBean(HazelcastInstance.class);
+    }
 
-        Configuration configuration = new Configuration();
-        configuration.setName(configuration().getName());
-        cacheManager = new CacheManager(configuration);
-
-        CacheConfiguration cacheConfiguration = new CacheConfiguration();
-        cacheConfiguration.setEternal(false);
-        cacheConfiguration.setTimeToIdleSeconds(configuration().getTimeToIdleSeconds());
-        cacheConfiguration.setTimeToLiveSeconds(configuration().getTimeToLiveSeconds());
-        cacheConfiguration.setMaxEntriesLocalHeap(configuration().getMaxEntriesLocalHeap());
-        cacheConfiguration.setName(configuration().getName());
-
-        LOGGER.info("Create a new cache: {}", configuration().getName());
-        net.sf.ehcache.Cache ehCache = new net.sf.ehcache.Cache(cacheConfiguration);
-        cache = new EhCacheDelegate(ehCache);
-        cacheManager.addCache(ehCache);
+    public Cache getCache(ExecutionContext executionContext) {
+        ReplicatedMap<Object, Object> map = hazelcastInstance.getReplicatedMap(hash(executionContext));
+        return new HazelcastDelegate(map, (int) configuration().getTimeToLiveSeconds());
     }
 
     @Override
-    protected void doStop() throws Exception {
-        super.doStop();
-
-        if (cacheManager != null) {
-            LOGGER.info("Clear cache {}", configuration().getName());
-            cacheManager.shutdown();
-        }
-    }
-
-    public Cache getCache() {
-        return this.cache;
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
     }
 }

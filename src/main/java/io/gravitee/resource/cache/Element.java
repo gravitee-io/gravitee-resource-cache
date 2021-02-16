@@ -15,15 +15,16 @@
  */
 package io.gravitee.resource.cache;
 
+import java.io.Serializable;
+
 /**
  * @author David BRASSELY (david at gravitee.io)
  * @author GraviteeSource Team
  */
 public interface Element {
-
     Object key();
 
-    Object value();
+    Serializable value();
 
     default int timeToLive() {
         return 0;
