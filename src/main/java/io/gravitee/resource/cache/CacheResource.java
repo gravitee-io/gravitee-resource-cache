@@ -15,12 +15,20 @@
  */
 package io.gravitee.resource.cache;
 
+import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionPolicy;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.replicatedmap.ReplicatedMap;
+import com.hazelcast.map.IMap;
 import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.resource.api.AbstractConfigurableResource;
 import io.gravitee.resource.cache.configuration.CacheResourceConfiguration;
 import io.gravitee.resource.cache.hazelcast.HazelcastDelegate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -32,9 +40,11 @@ import org.springframework.context.ApplicationContextAware;
 public class CacheResource extends AbstractConfigurableResource<CacheResourceConfiguration> implements ApplicationContextAware {
 
     private static final char KEY_SEPARATOR = '_';
+    private static final String MAP_PREFIX = "cache-resources" + KEY_SEPARATOR;
 
     private HazelcastInstance hazelcastInstance;
     private ApplicationContext applicationContext;
+    private List<String> configuredResources = new ArrayList<>();
 
     /**
      * Generate a unique identifier for the resource cache.
@@ -42,14 +52,65 @@ public class CacheResource extends AbstractConfigurableResource<CacheResourceCon
      * @param executionContext
      * @return
      */
-    private String hash(ExecutionContext executionContext) {
-        StringBuilder sb = new StringBuilder();
+    private String computeConfigName(ExecutionContext executionContext) {
+        StringBuilder sb = new StringBuilder(MAP_PREFIX).append(configuration().getName());
         Object attribute = executionContext.getAttribute(ExecutionContext.ATTR_API);
         if (attribute != null) {
-            sb.append(attribute).append(KEY_SEPARATOR);
+            sb.append(KEY_SEPARATOR).append(attribute);
         }
-        sb.append(configuration().getName());
         return sb.toString();
+    }
+
+    protected void applyConfiguration(String resourceConfigName) {
+        // Apply configuration only if not already configured
+        if (!configuredResources.contains(resourceConfigName)) {
+            Config config = hazelcastInstance.getConfig();
+            MapConfig closestResourceConfig = config.getMapConfig(resourceConfigName);
+
+            // Apply configuration from resource only if not have an explicit configuration in hazelcast.xml for this resource
+            if (!resourceConfigName.equals(closestResourceConfig.getName())) {
+                MapConfig resourceConfig = new MapConfig(closestResourceConfig);
+                resourceConfig.setName(resourceConfigName);
+
+                long desiredMaxSize = configuration().getMaxEntriesLocalHeap();
+                MaxSizePolicy maxSizePolicy = closestResourceConfig.getEvictionConfig().getMaxSizePolicy();
+                boolean notRelativeWithMemory =
+                    maxSizePolicy.equals(MaxSizePolicy.PER_NODE) ||
+                    maxSizePolicy.equals(MaxSizePolicy.PER_PARTITION) ||
+                    maxSizePolicy.equals(MaxSizePolicy.ENTRY_COUNT);
+                if (notRelativeWithMemory && desiredMaxSize != 0 && desiredMaxSize < closestResourceConfig.getEvictionConfig().getSize()) {
+                    resourceConfig.getEvictionConfig().setSize((int) desiredMaxSize);
+                    if (closestResourceConfig.getEvictionConfig().getEvictionPolicy().equals(EvictionPolicy.NONE)) {
+                        // Set "Least Recently Used" eviction policy if not have eviction configured
+                        resourceConfig.getEvictionConfig().setEvictionPolicy(EvictionPolicy.LRU);
+                    }
+                }
+
+                long desiredTimeToIdle = configuration().getTimeToIdleSeconds();
+                int maxIdleSeconds = closestResourceConfig.getMaxIdleSeconds();
+                if (maxIdleSeconds == 0 && desiredTimeToIdle > 0) {
+                    resourceConfig.setMaxIdleSeconds((int) desiredTimeToIdle);
+                } else if (maxIdleSeconds > 0 && desiredTimeToIdle == 0) {
+                    resourceConfig.setMaxIdleSeconds(maxIdleSeconds);
+                } else {
+                    resourceConfig.setMaxIdleSeconds(Math.min((int) desiredTimeToIdle, maxIdleSeconds));
+                }
+
+                long desiredTimeToLive = configuration().getTimeToLiveSeconds();
+                int timeToLiveSeconds = closestResourceConfig.getTimeToLiveSeconds();
+                if (timeToLiveSeconds == 0 && desiredTimeToLive > 0) {
+                    resourceConfig.setTimeToLiveSeconds((int) desiredTimeToLive);
+                } else if (timeToLiveSeconds > 0 && desiredTimeToLive == 0) {
+                    resourceConfig.setTimeToLiveSeconds(timeToLiveSeconds);
+                } else {
+                    int timeToLive = Math.min((int) desiredTimeToLive, timeToLiveSeconds);
+                    resourceConfig.setTimeToLiveSeconds(timeToLive);
+                }
+
+                config.addMapConfig(resourceConfig);
+                configuredResources.add(resourceConfigName);
+            }
+        }
     }
 
     @Override
@@ -59,12 +120,34 @@ public class CacheResource extends AbstractConfigurableResource<CacheResourceCon
     }
 
     public Cache getCache(ExecutionContext executionContext) {
-        ReplicatedMap<Object, Object> map = hazelcastInstance.getReplicatedMap(hash(executionContext));
+        String resourceConfigName = computeConfigName(executionContext);
+        applyConfiguration(resourceConfigName);
+        IMap<Object, Object> map = hazelcastInstance.getMap(resourceConfigName);
         return new HazelcastDelegate(map, (int) configuration().getTimeToLiveSeconds());
     }
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
+    }
+
+    @Override
+    protected void doStop() throws Exception {
+        super.doStop();
+        Config config = hazelcastInstance.getConfig();
+        // Reset resource configuration
+        Map<String, MapConfig> allExpectConfiguredResources = new HashMap<>();
+        config
+            .getMapConfigs()
+            .values()
+            .forEach(
+                mapConfig -> {
+                    if (!configuredResources.contains(mapConfig.getName())) {
+                        allExpectConfiguredResources.put(mapConfig.getName(), mapConfig);
+                    }
+                }
+            );
+        config.setMapConfigs(allExpectConfiguredResources);
+        configuredResources.clear();
     }
 }

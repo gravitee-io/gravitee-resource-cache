@@ -15,7 +15,7 @@
  */
 package io.gravitee.resource.cache.hazelcast;
 
-import com.hazelcast.replicatedmap.ReplicatedMap;
+import com.hazelcast.map.IMap;
 import io.gravitee.resource.cache.Cache;
 import io.gravitee.resource.cache.Element;
 import java.io.Serializable;
@@ -23,10 +23,10 @@ import java.util.concurrent.TimeUnit;
 
 public class HazelcastDelegate implements Cache {
 
-    private final ReplicatedMap<Object, Object> cache;
+    private final IMap<Object, Object> cache;
     private final int timeToLiveSeconds;
 
-    public HazelcastDelegate(ReplicatedMap<Object, Object> cache, int timeToLiveSeconds) {
+    public HazelcastDelegate(IMap<Object, Object> cache, int timeToLiveSeconds) {
         this.cache = cache;
         this.timeToLiveSeconds = timeToLiveSeconds;
     }
