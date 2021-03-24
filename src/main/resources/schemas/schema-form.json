@@ -28,6 +28,16 @@
       "type" : "integer",
       "default": 1000,
       "minimum": 0
+    },
+    "cacheType" : {
+      "title": "Cache type",
+      "description": "Choose cache type",
+      "type" : "string",
+      "enum": [
+        "ehcache",
+        "redis"
+      ],
+      "default": "redis"
     }
   },
   "required": [
@@ -35,6 +45,7 @@
     "timeToIdleSeconds",
     "timeToLiveSeconds",
     "maxEntriesLocalHeap",
+    "cacheType",
     "timeToLiveSeconds"
   ]
 }

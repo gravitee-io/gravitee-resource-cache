@@ -25,6 +25,8 @@ public class CacheResourceConfiguration implements ResourceConfiguration {
 
     private String name = "my-cache";
 
+    private String cacheType = "ehcache";
+
     private long timeToIdleSeconds = 0;
 
     private long timeToLiveSeconds = 0;
@@ -62,4 +64,9 @@ public class CacheResourceConfiguration implements ResourceConfiguration {
     public void setTimeToLiveSeconds(long timeToLiveSeconds) {
         this.timeToLiveSeconds = timeToLiveSeconds;
     }
+
+    public String getCacheType() { return cacheType;}
+
+    public void setCacheType(String cacheType) { this.cacheType = cacheType; }
+
 }

@@ -36,7 +36,11 @@
 
     <properties>
         <gravitee-resource-api.version>1.1.0</gravitee-resource-api.version>
-        <gravitee-gateway-api.version>1.24.0</gravitee-gateway-api.version>
+        <ehcache.version>2.10.2.2.21</ehcache.version>
+        <spring.data.redis>2.3.4.RELEASE</spring.data.redis>
+        <gateway.api.version>1.23.0</gateway.api.version>
+        <redis.clients.jedis.version>3.3.0</redis.clients.jedis.version>
+        <policy.cache.version>1.9.0</policy.cache.version>
         <maven-assembly-plugin.version>2.5.5</maven-assembly-plugin.version>
         <hazelcast.version>4.1.1</hazelcast.version>
     </properties>
@@ -92,6 +96,37 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <!-- Redis dependency -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-redis</artifactId>
+            <version>${spring.data.redis}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.gravitee.gateway</groupId>
+            <artifactId>gravitee-gateway-api</artifactId>
+            <version>${gateway.api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.gravitee.policy</groupId>
+            <artifactId>gravitee-policy-cache</artifactId>
+            <version>${policy.cache.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>${redis.clients.jedis.version}</version>
         </dependency>
     </dependencies>
 
