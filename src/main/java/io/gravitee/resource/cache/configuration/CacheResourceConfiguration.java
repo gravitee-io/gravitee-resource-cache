@@ -18,7 +18,7 @@ package io.gravitee.resource.cache.configuration;
 import io.gravitee.resource.api.ResourceConfiguration;
 
 /**
- * @author David BRASSELY (david at gravitee.io)
+ * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
 public class CacheResourceConfiguration implements ResourceConfiguration {

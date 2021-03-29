@@ -23,6 +23,8 @@ import com.hazelcast.config.*;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 import io.gravitee.gateway.api.ExecutionContext;
+import io.gravitee.resource.cache.api.Cache;
+import io.gravitee.resource.cache.api.Element;
 import io.gravitee.resource.cache.configuration.CacheResourceConfiguration;
 import java.io.*;
 import java.util.concurrent.TimeUnit;
@@ -64,7 +66,7 @@ public class CacheResourceTest {
     ApplicationContext applicationContext;
 
     @InjectMocks
-    CacheResource cacheResource;
+    HazelcastCacheResource cacheResource;
 
     @Before
     public void setup() throws Exception {
