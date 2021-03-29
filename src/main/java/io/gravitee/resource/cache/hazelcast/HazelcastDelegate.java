@@ -16,11 +16,15 @@
 package io.gravitee.resource.cache.hazelcast;
 
 import com.hazelcast.map.IMap;
-import io.gravitee.resource.cache.Cache;
-import io.gravitee.resource.cache.Element;
+import io.gravitee.resource.cache.api.Cache;
+import io.gravitee.resource.cache.api.Element;
 import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * @author David BRASSELY (david.brassely at graviteesource.com)
+ * @author GraviteeSource Team
+ */
 public class HazelcastDelegate implements Cache {
 
     private final IMap<Object, Object> cache;

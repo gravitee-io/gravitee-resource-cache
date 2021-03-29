@@ -22,7 +22,8 @@ import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 import io.gravitee.gateway.api.ExecutionContext;
-import io.gravitee.resource.api.AbstractConfigurableResource;
+import io.gravitee.resource.cache.api.Cache;
+import io.gravitee.resource.cache.api.CacheResource;
 import io.gravitee.resource.cache.configuration.CacheResourceConfiguration;
 import io.gravitee.resource.cache.hazelcast.HazelcastDelegate;
 import java.util.ArrayList;
@@ -34,10 +35,10 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
 /**
- * @author David BRASSELY (david at gravitee.io)
+ * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class CacheResource extends AbstractConfigurableResource<CacheResourceConfiguration> implements ApplicationContextAware {
+public class HazelcastCacheResource extends CacheResource<CacheResourceConfiguration> implements ApplicationContextAware {
 
     private static final char KEY_SEPARATOR = '_';
     private static final String MAP_PREFIX = "cache-resources" + KEY_SEPARATOR;
