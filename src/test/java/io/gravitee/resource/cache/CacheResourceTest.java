@@ -15,18 +15,21 @@
  */
 package io.gravitee.resource.cache;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-import com.hazelcast.config.*;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.resource.cache.api.Cache;
 import io.gravitee.resource.cache.api.Element;
 import io.gravitee.resource.cache.configuration.CacheResourceConfiguration;
-import java.io.*;
+import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
@@ -73,7 +76,6 @@ public class CacheResourceTest {
         config = new Config();
         when(hazelcastInstance.getConfig()).thenReturn(config);
         when(hazelcastInstance.getMap(anyString())).thenReturn(map);
-        when(executionContext.getAttribute(ExecutionContext.ATTR_API)).thenReturn(API_ID);
         when(configuration.getName()).thenReturn(RESOURCE_NAME);
         when(configuration.getTimeToLiveSeconds()).thenReturn(TIME_TO_LIVE);
 
@@ -120,7 +122,7 @@ public class CacheResourceTest {
         };
         cache.put(element);
 
-        verify(hazelcastInstance, times(1)).getMap("cache-resources_" + RESOURCE_NAME + "_" + API_ID);
+        verify(hazelcastInstance, times(1)).getMap(argThat(cacheName -> cacheName.startsWith("cache-resources_" + RESOURCE_NAME + "_")));
         verify(map, times(1)).put("foobar", "value", TIME_TO_LIVE, TimeUnit.SECONDS);
     }
 
@@ -128,7 +130,24 @@ public class CacheResourceTest {
     public void shouldPutToCacheWithTtl() {
         Cache cache = cacheResource.getCache(executionContext);
 
-        Element element = new Element() {
+        Element element = buildElement();
+        cache.put(element);
+
+        verify(hazelcastInstance, times(1)).getMap(argThat(cacheName -> cacheName.startsWith("cache-resources_" + RESOURCE_NAME + "_")));
+        verify(map, times(1)).put("foobar", "value", 30, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void shouldDestroyCache() throws Exception {
+        final Cache cache = cacheResource.getCache(executionContext);
+        assertNotNull(cache);
+        cacheResource.doStop();
+        final Cache cacheAfterDoStop = cacheResource.getCache(executionContext);
+        assertNull(cacheAfterDoStop);
+    }
+
+    private Element buildElement() {
+        return new Element() {
             @Override
             public Object key() {
                 return "foobar";
@@ -144,61 +163,5 @@ public class CacheResourceTest {
                 return 30;
             }
         };
-        cache.put(element);
-
-        verify(hazelcastInstance, times(1)).getMap("cache-resources_" + RESOURCE_NAME + "_" + API_ID);
-        verify(map, times(1)).put("foobar", "value", 30, TimeUnit.SECONDS);
-    }
-
-    @Test
-    public void shouldCreateMapConfig() {
-        when(configuration.getMaxEntriesLocalHeap()).thenReturn(150L);
-        when(configuration.getTimeToIdleSeconds()).thenReturn(20L);
-        when(configuration.getTimeToLiveSeconds()).thenReturn(10L);
-
-        cacheResource.getCache(executionContext);
-
-        assertEquals(config.getMapConfigs().size(), 2);
-        MapConfig resourceConfig = config.getMapConfig("cache-resources_" + RESOURCE_NAME + "_" + API_ID);
-        assertEquals(resourceConfig.getMaxIdleSeconds(), 20);
-        assertEquals(resourceConfig.getTimeToLiveSeconds(), 10);
-        assertEquals(resourceConfig.getEvictionConfig().getMaxSizePolicy(), MaxSizePolicy.PER_NODE);
-        assertEquals(resourceConfig.getEvictionConfig().getSize(), 150);
-    }
-
-    @Test
-    public void shouldNotOverrideMapConfig() {
-        MapConfig explicitResourceConfig = new MapConfig();
-        explicitResourceConfig.setName("cache-resources_" + RESOURCE_NAME + "_" + API_ID);
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setMaxSizePolicy(MaxSizePolicy.FREE_HEAP_SIZE);
-        explicitResourceConfig.setEvictionConfig(evictionConfig);
-        config.addMapConfig(explicitResourceConfig);
-
-        when(configuration.getTimeToLiveSeconds()).thenReturn(10L);
-
-        cacheResource.getCache(executionContext);
-
-        assertEquals(config.getMapConfigs().size(), 2);
-        MapConfig resourceConfig = config.getMapConfig("cache-resources_" + RESOURCE_NAME + "_" + API_ID);
-        assertEquals(resourceConfig.getMaxIdleSeconds(), 0);
-        assertEquals(resourceConfig.getTimeToLiveSeconds(), 0);
-        assertEquals(resourceConfig.getEvictionConfig().getMaxSizePolicy(), MaxSizePolicy.FREE_HEAP_SIZE);
-    }
-
-    @Test
-    public void shouldCreateMapConfigOnlyForSmallerValues() {
-        when(configuration.getMaxEntriesLocalHeap()).thenReturn(250L);
-        when(configuration.getTimeToIdleSeconds()).thenReturn(700L);
-        when(configuration.getTimeToLiveSeconds()).thenReturn(60L);
-
-        cacheResource.getCache(executionContext);
-
-        assertEquals(config.getMapConfigs().size(), 2);
-        MapConfig resourceConfig = config.getMapConfig("cache-resources_" + RESOURCE_NAME + "_" + API_ID);
-        assertEquals(resourceConfig.getMaxIdleSeconds(), 600);
-        assertEquals(resourceConfig.getTimeToLiveSeconds(), 60);
-        assertEquals(resourceConfig.getEvictionConfig().getMaxSizePolicy(), MaxSizePolicy.PER_NODE);
-        assertEquals(resourceConfig.getEvictionConfig().getSize(), 200);
     }
 }
