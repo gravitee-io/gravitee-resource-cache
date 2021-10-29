@@ -36,7 +36,7 @@
 
     <properties>
         <gravitee-resource-api.version>1.1.0</gravitee-resource-api.version>
-        <ehcache.version>2.10.2.2.21</ehcache.version>
+        <ehcache.version>2.10.9.2</ehcache.version>
 
         <maven-assembly-plugin.version>2.5.5</maven-assembly-plugin.version>
     </properties>
