@@ -40,8 +40,8 @@ import org.mockito.junit.MockitoJUnitRunner;
 public class StandaloneCacheResourceTest {
 
     private static final String RESOURCE_NAME = "my-cache-resource";
-    private static final Long TIME_TO_LIVE = 60L;
-    private static final int TIME_TO_SLEEP = 10;
+    private static final Long TIME_TO_LIVE = 6L;
+    private static final int TIME_TO_SLEEP = 1;
 
     @Mock
     ExecutionContext executionContext;
@@ -70,7 +70,7 @@ public class StandaloneCacheResourceTest {
         Cache cache = cacheResource.getCache(executionContext);
         Element element = buildElement(2 * TIME_TO_SLEEP);
         cache.put(element);
-        Thread.sleep(TIME_TO_SLEEP);
+        Thread.sleep(TIME_TO_SLEEP * 1000L);
 
         assertNotNull(cache.get(element.key()));
     }
@@ -82,18 +82,18 @@ public class StandaloneCacheResourceTest {
         Element element = buildElement(TIME_TO_SLEEP);
         cache.put(element);
 
-        Thread.sleep(TIME_TO_SLEEP);
+        Thread.sleep(TIME_TO_SLEEP * 1000L);
         assertNull(cache.get(element.key()));
     }
 
     @Test
     public void shouldBeRenewed() throws InterruptedException {
         Cache cache = cacheResource.getCache(executionContext);
-        Element element = buildElement(3 * TIME_TO_SLEEP);
+        Element element = buildElement(2 * TIME_TO_SLEEP);
         cache.put(element);
-        Thread.sleep(2 * TIME_TO_SLEEP);
+        Thread.sleep(TIME_TO_SLEEP * 1000L);
         cache.get(element.key());
-        Thread.sleep(2 * TIME_TO_SLEEP);
+        Thread.sleep(TIME_TO_SLEEP * 1000L);
 
         assertNotNull(cache.get(element.key()));
     }

@@ -135,8 +135,8 @@ public class StandaloneCache implements Cache {
         private final long maxLifeTimeMillis;
         private final Object key;
 
-        public CacheDelayed(Object key, long maxLifeTimeMillis) {
-            this.maxLifeTimeMillis = maxLifeTimeMillis;
+        public CacheDelayed(Object key, int timeToLiveSeconds) {
+            this.maxLifeTimeMillis = timeToLiveSeconds * 1000L;
             this.key = key;
         }
 
