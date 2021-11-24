@@ -13,72 +13,68 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.resource.cache.hazelcast;
+package io.gravitee.resource.cache.inmemory;
 
-import com.hazelcast.map.IMap;
 import io.gravitee.resource.cache.api.Cache;
 import io.gravitee.resource.cache.api.Element;
-import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class HazelcastDelegate implements Cache {
+public class InMemoryCacheDelegate implements Cache {
 
-    private final IMap<Object, Object> cache;
-    private final int timeToLiveSeconds;
+    private final String name;
+    private final io.gravitee.node.api.cache.Cache wrapped;
 
-    public HazelcastDelegate(IMap<Object, Object> cache, int timeToLiveSeconds) {
-        this.cache = cache;
-        this.timeToLiveSeconds = timeToLiveSeconds;
+    public InMemoryCacheDelegate(final String name, final io.gravitee.node.api.cache.Cache wrapped) {
+        this.name = name;
+        this.wrapped = wrapped;
     }
 
     @Override
     public String getName() {
-        return cache.getName();
+        return name;
     }
 
     @Override
-    public IMap<Object, Object> getNativeCache() {
-        return cache;
+    public Object getNativeCache() {
+        return wrapped;
     }
 
     @Override
-    public Element get(Object key) {
-        Serializable o = (Serializable) this.cache.get(key);
-        return (o == null)
-            ? null
-            : new Element() {
+    public Element get(Object o) {
+        final Object value = wrapped.get(o);
+        if (value != null) {
+            return new Element() {
                 @Override
                 public Object key() {
-                    return key;
+                    return o;
                 }
 
                 @Override
-                public Serializable value() {
-                    return o;
+                public Object value() {
+                    return value;
                 }
             };
+        }
+
+        return null;
     }
 
     @Override
     public void put(Element element) {
-        int ttl = this.timeToLiveSeconds;
-        if ((ttl == 0 && element.timeToLive() > 0) || (ttl > 0 && element.timeToLive() > 0 && ttl > element.timeToLive())) {
-            ttl = element.timeToLive();
-        }
-        cache.put(element.key(), element.value(), ttl, TimeUnit.SECONDS);
+        wrapped.put(element.key(), element.value(), element.timeToLive(), TimeUnit.SECONDS);
     }
 
     @Override
-    public void evict(Object key) {
-        cache.remove(key);
+    public void evict(Object o) {
+        wrapped.evict(o);
     }
 
     @Override
     public void clear() {
-        cache.clear();
+        wrapped.clear();
     }
 }
