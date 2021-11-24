@@ -37,10 +37,10 @@
     <properties>
         <gravitee-resource-api.version>1.1.0</gravitee-resource-api.version>
         <gravitee-gateway-api.version>1.24.0</gravitee-gateway-api.version>
-        <gravitee-resource-cache-provider-api.version>1.0.0</gravitee-resource-cache-provider-api.version>
+        <gravitee-resource-cache-provider-api.version>1.1.0</gravitee-resource-cache-provider-api.version>
 
         <maven-assembly-plugin.version>2.5.5</maven-assembly-plugin.version>
-        <hazelcast.version>4.1.1</hazelcast.version>
+        <gravitee-node.version>1.19.0-SNAPSHOT</gravitee-node.version>
     </properties>
 
     <dependencies>
@@ -66,11 +66,10 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- hazelcast dependency -->
         <dependency>
-            <groupId>com.hazelcast</groupId>
-            <artifactId>hazelcast</artifactId>
-            <version>${hazelcast.version}</version>
+            <groupId>io.gravitee.node</groupId>
+            <artifactId>gravitee-node-cache</artifactId>
+            <version>${gravitee-node.version}</version>
             <scope>provided</scope>
         </dependency>
 
