@@ -40,7 +40,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 public class StandaloneCacheResourceTest {
 
     private static final String RESOURCE_NAME = "my-cache-resource";
-    private static final Long TIME_TO_LIVE = 6L;
+    private static final Long TIME_TO_LIVE = 1L;
     private static final int TIME_TO_SLEEP = 1;
 
     @Mock
@@ -67,53 +67,37 @@ public class StandaloneCacheResourceTest {
 
     @Test
     public void shouldPutToCache() throws InterruptedException {
-        Cache cache = cacheResource.getCache(executionContext);
-        Element element = buildElement(2 * TIME_TO_SLEEP);
+        Cache<String, String> cache = cacheResource.getCache(executionContext);
+        Element<String, String> element = buildElement(TIME_TO_SLEEP);
         cache.put(element);
-        Thread.sleep(TIME_TO_SLEEP * 1000L);
 
-        assertNotNull(cache.get(element.key()));
+        assertNotNull(cache.get(element.getKey()));
     }
 
     @Test
     public void shouldBeCleanedUpFromCache() throws InterruptedException {
-        Cache cache = cacheResource.getCache(executionContext);
+        Cache<String, String> cache = cacheResource.getCache(executionContext);
 
-        Element element = buildElement(TIME_TO_SLEEP);
+        Element<String, String> element = buildElement(TIME_TO_SLEEP);
         cache.put(element);
 
         Thread.sleep(TIME_TO_SLEEP * 1000L);
-        assertNull(cache.get(element.key()));
+        assertNull(cache.get(element.getKey()));
     }
 
     @Test
     public void shouldBeRenewed() throws InterruptedException {
-        Cache cache = cacheResource.getCache(executionContext);
-        Element element = buildElement(2 * TIME_TO_SLEEP);
+        Cache<String, String> cache = cacheResource.getCache(executionContext);
+        Element<String, String> element = buildElement(TIME_TO_SLEEP);
         cache.put(element);
-        Thread.sleep(TIME_TO_SLEEP * 1000L);
-        cache.get(element.key());
-        Thread.sleep(TIME_TO_SLEEP * 1000L);
+        Thread.sleep(TIME_TO_SLEEP * 900L);
+        cache.get(element.getKey());
+        Thread.sleep(TIME_TO_SLEEP * 500L);
 
-        assertNotNull(cache.get(element.key()));
+        assertNotNull(cache.get(element.getKey()));
     }
 
-    private Element buildElement(int timeToLive) {
-        return new Element() {
-            @Override
-            public Object key() {
-                return "foobar";
-            }
-
-            @Override
-            public Serializable value() {
-                return "value";
-            }
-
-            @Override
-            public int timeToLive() {
-                return timeToLive;
-            }
-        };
+    private Element<String, String> buildElement(int timeToLive) {
+        return new Element<>("foobar", "value", timeToLive);
     }
 }

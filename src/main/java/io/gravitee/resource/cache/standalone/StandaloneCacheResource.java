@@ -27,8 +27,7 @@ import io.gravitee.resource.cache.configuration.CacheResourceConfiguration;
  */
 public class StandaloneCacheResource extends CacheResource<CacheResourceConfiguration> {
 
-    private static final char KEY_SEPARATOR = '_';
-    private static final String MAP_PREFIX = "cache-resources" + KEY_SEPARATOR;
+    private static final String MAP_PREFIX = "cache-resources" + CacheResourceConfiguration.KEY_SEPARATOR;
     private Cache cache;
 
     @Override
@@ -36,8 +35,8 @@ public class StandaloneCacheResource extends CacheResource<CacheResourceConfigur
         super.doStart();
 
         final CacheResourceConfiguration configuration = configuration();
-        String cacheId = MAP_PREFIX + configuration.getName() + KEY_SEPARATOR + UUID.random().toString();
-        cache = new StandaloneCache(cacheId, (int) configuration().getTimeToLiveSeconds());
+        String cacheId = MAP_PREFIX + configuration.getName() + CacheResourceConfiguration.KEY_SEPARATOR + UUID.random().toString();
+        cache = new StandaloneCache<>(cacheId, (int) configuration().getTimeToLiveSeconds());
     }
 
     @Override
@@ -49,7 +48,7 @@ public class StandaloneCacheResource extends CacheResource<CacheResourceConfigur
     }
 
     @Override
-    public Cache getCache(ExecutionContext executionContext) {
+    public <K, V> Cache<K, V> getCache(ExecutionContext executionContext) {
         return cache;
     }
 }

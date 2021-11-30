@@ -15,31 +15,34 @@
  */
 package io.gravitee.resource.cache.standalone;
 
-import io.gravitee.resource.cache.api.Cache;
-import io.gravitee.resource.cache.api.Element;
-import java.io.Serializable;
+import com.google.common.base.Verify;
+import com.google.common.cache.CacheBuilder;
+import io.gravitee.resource.cache.api.*;
 import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.DelayQueue;
-import java.util.concurrent.Delayed;
-import java.util.concurrent.TimeUnit;
+import java.util.UUID;
+import java.util.concurrent.*;
+import org.springframework.util.Assert;
 
 /**
  * @author Kamiel Ahmadpour (kamiel.ahmadpour at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class StandaloneCache implements Cache {
+public class StandaloneCache<K, V> implements Cache<K, V> {
 
     private final String name;
     private final int timeToLiveSeconds;
-    private final Map<Object, Object> internalMap = new ConcurrentHashMap<>();
-    private final Map<Object, CacheDelayed> expiringKeys = new ConcurrentHashMap<>();
-    private final DelayQueue<CacheDelayed> delayQueue = new DelayQueue<>();
+    private final com.google.common.cache.Cache<K, V> internalCache;
+    Map<UUID, CacheListener<K, V>> cacheListenerMap = new ConcurrentHashMap<>();
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "gio-standalone-cache"));
 
     public StandaloneCache(String name, int timeToLiveSeconds) {
         this.name = name;
         this.timeToLiveSeconds = timeToLiveSeconds;
+        CacheBuilder<Object, Object> cacheBuilder = CacheBuilder.newBuilder();
+        if (timeToLiveSeconds > 0) {
+            cacheBuilder.expireAfterAccess(timeToLiveSeconds, TimeUnit.SECONDS);
+        }
+        internalCache = cacheBuilder.build();
     }
 
     @Override
@@ -48,135 +51,109 @@ public class StandaloneCache implements Cache {
     }
 
     @Override
-    public Map<Object, Object> getNativeCache() {
-        cleanup();
-        return internalMap;
+    public int size() {
+        return ((Long) this.internalCache.size()).intValue();
     }
 
     @Override
-    public Element get(Object key) {
-        cleanup();
-        renewKey(key);
-        Serializable value = (Serializable) this.internalMap.get(key);
-        return (value == null)
-            ? null
-            : new Element() {
-                @Override
-                public Object key() {
-                    return key;
+    public Map<K, V> getNativeCache() {
+        return this.internalCache.asMap();
+    }
+
+    @Override
+    public Element<K, V> get(K key) {
+        V value = internalCache.getIfPresent(key);
+        return (value == null) ? null : new Element<>(key, value);
+    }
+
+    @Override
+    public V put(Element<K, V> element) {
+        // TODO - Kamiel - 29/11/2021: There are so different checks needs to be done for validation the element key, valye, ttl
+        Assert.notNull(element, "Element can't be null");
+        Verify.verify(
+            element.getTimeToLive() <= this.timeToLiveSeconds,
+            "Element time to live can't be bigger than time to live defined in the configuration"
+        );
+
+        V currentValue = this.internalCache.getIfPresent(element.getKey());
+        executorService.execute(
+            () -> {
+                if (currentValue == null) {
+                    cacheListenerMap.forEach(
+                        (uuid, cacheListener) ->
+                            new EntryEvent<>(
+                                name,
+                                EntryEventType.ADDED,
+                                element.getKey(),
+                                get(element.getKey()).getValue(),
+                                element.getValue()
+                            )
+                    );
+                } else {
+                    cacheListenerMap.forEach(
+                        (uuid, cacheListener) ->
+                            new EntryEvent<>(
+                                name,
+                                EntryEventType.UPDATED,
+                                element.getKey(),
+                                get(element.getKey()).getValue(),
+                                element.getValue()
+                            )
+                    );
                 }
+            }
+        );
 
-                @Override
-                public Serializable value() {
-                    return value;
-                }
-            };
+        this.internalCache.put(element.getKey(), element.getValue());
+        return currentValue;
     }
 
     @Override
-    public void put(Element element) {
-        cleanup();
+    public V evict(K key) {
+        executorService.execute(
+            () ->
+                cacheListenerMap.forEach(
+                    (uuid, cacheListener) -> new EntryEvent<>(name, EntryEventType.REMOVED, key, get(key).getValue(), null)
+                )
+        );
+        V v = this.internalCache.getIfPresent(key);
+        this.internalCache.invalidate(key);
 
-        int ttl = this.timeToLiveSeconds;
-        if ((ttl == 0 && element.timeToLive() > 0) || (ttl > 0 && element.timeToLive() > 0 && ttl > element.timeToLive())) {
-            ttl = element.timeToLive();
-        }
-
-        CacheDelayed delayedKey = new CacheDelayed(element.key(), ttl);
-        CacheDelayed oldKey = expiringKeys.put(element.key(), delayedKey);
-        if (oldKey != null) {
-            expireKey(oldKey);
-            expiringKeys.put(element.key(), delayedKey);
-        }
-        delayQueue.offer(delayedKey);
-
-        internalMap.put(element.key(), element.value());
-    }
-
-    @Override
-    public void evict(Object key) {
-        expireKey(expiringKeys.remove(key));
-        internalMap.remove(key);
+        return v;
     }
 
     @Override
     public void clear() {
-        delayQueue.clear();
-        expiringKeys.clear();
-        internalMap.clear();
+        // TODO - Kamiel - 29/11/2021: Check id it is needed
+        getNativeCache()
+            .forEach(
+                (key, value) ->
+                    executorService.execute(
+                        () ->
+                            cacheListenerMap.forEach(
+                                (uuid, cacheListener) -> new EntryEvent<>(name, EntryEventType.REMOVED, key, value, null)
+                            )
+                    )
+            );
+
+        this.internalCache.invalidateAll();
     }
 
-    private void renewKey(Object key) {
-        CacheDelayed delayedKey = expiringKeys.get(key);
-        if (delayedKey != null) {
-            delayedKey.renew();
-        }
+    @Override
+    public UUID addCacheListener(CacheListener<K, V> cacheListener) {
+        UUID uuid = io.gravitee.common.utils.UUID.random();
+        cacheListenerMap.put(uuid, cacheListener);
+
+        return uuid;
     }
 
-    private void expireKey(CacheDelayed delayedKey) {
-        if (delayedKey != null) {
-            delayedKey.expire();
-            cleanup();
-        }
-    }
-
-    private void cleanup() {
-        CacheDelayed delayedKey = delayQueue.poll();
-        while (delayedKey != null) {
-            internalMap.remove(delayedKey.getKey());
-            expiringKeys.remove(delayedKey.getKey());
-            delayedKey = delayQueue.poll();
-        }
-    }
-
-    private static class CacheDelayed implements Delayed {
-
-        private long startTime = System.currentTimeMillis();
-        private final long maxLifeTimeMillis;
-        private final Object key;
-
-        public CacheDelayed(Object key, int timeToLiveSeconds) {
-            this.maxLifeTimeMillis = timeToLiveSeconds * 1000L;
-            this.key = key;
-        }
-
-        public Object getKey() {
-            return key;
-        }
-
-        @Override
-        public long getDelay(TimeUnit unit) {
-            return unit.convert(getDelayMillis(), TimeUnit.MILLISECONDS);
-        }
-
-        private long getDelayMillis() {
-            return (startTime + maxLifeTimeMillis) - System.currentTimeMillis();
-        }
-
-        public void renew() {
-            startTime = System.currentTimeMillis();
-        }
-
-        public void expire() {
-            startTime = Long.MIN_VALUE;
-        }
-
-        @Override
-        public int compareTo(Delayed that) {
-            return Long.compare(this.getDelayMillis(), ((CacheDelayed) that).getDelayMillis());
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            CacheDelayed that = (CacheDelayed) o;
-            return startTime == that.startTime && maxLifeTimeMillis == that.maxLifeTimeMillis && key.equals(that.key);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(startTime, maxLifeTimeMillis, key);
+    @Override
+    public boolean removeCacheListener(UUID id) {
+        if (!cacheListenerMap.containsKey(id)) {
+            return false;
+        } else {
+            cacheListenerMap.remove(id);
+            return true;
         }
     }
 }

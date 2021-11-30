@@ -15,22 +15,27 @@
  */
 package io.gravitee.resource.cache.hazelcast;
 
+import com.hazelcast.core.EntryEvent;
 import com.hazelcast.map.IMap;
+import com.hazelcast.map.impl.MapListenerAdapter;
 import io.gravitee.resource.cache.api.Cache;
+import io.gravitee.resource.cache.api.CacheListener;
 import io.gravitee.resource.cache.api.Element;
-import java.io.Serializable;
+import io.gravitee.resource.cache.api.EntryEventType;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.springframework.util.Assert;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class HazelcastDelegate implements Cache {
+public class HazelcastDelegate<K, V> implements Cache<K, V> {
 
-    private final IMap<Object, Object> cache;
+    private final IMap<K, V> cache;
     private final int timeToLiveSeconds;
 
-    public HazelcastDelegate(IMap<Object, Object> cache, int timeToLiveSeconds) {
+    public HazelcastDelegate(IMap<K, V> cache, int timeToLiveSeconds) {
         this.cache = cache;
         this.timeToLiveSeconds = timeToLiveSeconds;
     }
@@ -41,44 +46,69 @@ public class HazelcastDelegate implements Cache {
     }
 
     @Override
-    public IMap<Object, Object> getNativeCache() {
+    public int size() {
+        return cache.size();
+    }
+
+    @Override
+    public IMap<K, V> getNativeCache() {
         return cache;
     }
 
     @Override
-    public Element get(Object key) {
-        Serializable o = (Serializable) this.cache.get(key);
-        return (o == null)
-            ? null
-            : new Element() {
-                @Override
-                public Object key() {
-                    return key;
-                }
-
-                @Override
-                public Serializable value() {
-                    return o;
-                }
-            };
+    public Element<K, V> get(K key) {
+        V value = this.cache.get(key);
+        return (value == null) ? null : new Element<>(key, value);
     }
 
     @Override
-    public void put(Element element) {
-        int ttl = this.timeToLiveSeconds;
-        if ((ttl == 0 && element.timeToLive() > 0) || (ttl > 0 && element.timeToLive() > 0 && ttl > element.timeToLive())) {
-            ttl = element.timeToLive();
+    public V put(Element<K, V> element) {
+        // TODO - Kamiel - 26/11/2021: There are so different checks needs to be done for validation the element key, valye, ttl
+        Assert.notNull(element, "Element can't be null");
+        if (element.getTimeToLive() > this.timeToLiveSeconds) {
+            throw new RuntimeException("Element time to live can't be bigger than time to live defined in the configuration");
         }
-        cache.put(element.key(), element.value(), ttl, TimeUnit.SECONDS);
+
+        int ttl = Math.min(element.getTimeToLive(), this.timeToLiveSeconds);
+        return cache.put(element.getKey(), element.getValue(), ttl, TimeUnit.SECONDS);
     }
 
     @Override
-    public void evict(Object key) {
+    public V evict(K key) {
+        V v = cache.get(key);
         cache.remove(key);
+
+        return v;
     }
 
     @Override
     public void clear() {
         cache.clear();
+    }
+
+    @Override
+    public UUID addCacheListener(CacheListener<K, V> cacheListener) {
+        return this.cache.addEntryListener(
+                new MapListenerAdapter<K, V>() {
+                    @Override
+                    public void onEntryEvent(EntryEvent<K, V> event) {
+                        cacheListener.onEvent(
+                            new io.gravitee.resource.cache.api.EntryEvent<>(
+                                event.getSource(),
+                                EntryEventType.getByType(event.getEventType().getType()),
+                                event.getKey(),
+                                event.getOldValue(),
+                                event.getValue()
+                            )
+                        );
+                    }
+                },
+                true
+            );
+    }
+
+    @Override
+    public boolean removeCacheListener(UUID id) {
+        return this.cache.removeEntryListener(id);
     }
 }

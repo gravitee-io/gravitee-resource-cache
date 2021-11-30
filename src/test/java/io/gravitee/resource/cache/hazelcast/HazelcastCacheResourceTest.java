@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.resource.cache;
+package io.gravitee.resource.cache.hazelcast;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -29,7 +29,6 @@ import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.resource.cache.api.Cache;
 import io.gravitee.resource.cache.api.Element;
 import io.gravitee.resource.cache.configuration.CacheResourceConfiguration;
-import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
@@ -45,7 +44,7 @@ import org.springframework.context.ApplicationContext;
  * @author GraviteeSource Team
  */
 @RunWith(MockitoJUnitRunner.class)
-public class CacheResourceTest {
+public class HazelcastCacheResourceTest {
 
     private static final String API_ID = "my-api";
     private static final String RESOURCE_NAME = "my-cache-resource";
@@ -102,35 +101,20 @@ public class CacheResourceTest {
 
     @Test
     public void shouldPutToCache() {
-        Cache cache = cacheResource.getCache(executionContext);
+        Cache<String, String> cache = cacheResource.getCache(executionContext);
 
-        Element element = new Element() {
-            @Override
-            public Object key() {
-                return "foobar";
-            }
-
-            @Override
-            public Serializable value() {
-                return "value";
-            }
-
-            @Override
-            public int timeToLive() {
-                return 120;
-            }
-        };
+        Element<String, String> element = new Element<>("foobar", "value", 30);
         cache.put(element);
 
         verify(hazelcastInstance, times(1)).getMap(argThat(cacheName -> cacheName.startsWith("cache-resources_" + RESOURCE_NAME + "_")));
-        verify(map, times(1)).put("foobar", "value", TIME_TO_LIVE, TimeUnit.SECONDS);
+        verify(map, times(1)).put("foobar", "value", 30, TimeUnit.SECONDS);
     }
 
     @Test
     public void shouldPutToCacheWithTtl() {
-        Cache cache = cacheResource.getCache(executionContext);
+        Cache<String, String> cache = cacheResource.getCache(executionContext);
 
-        Element element = buildElement();
+        Element<String, String> element = buildElement();
         cache.put(element);
 
         verify(hazelcastInstance, times(1)).getMap(argThat(cacheName -> cacheName.startsWith("cache-resources_" + RESOURCE_NAME + "_")));
@@ -139,29 +123,14 @@ public class CacheResourceTest {
 
     @Test
     public void shouldDestroyCache() throws Exception {
-        final Cache cache = cacheResource.getCache(executionContext);
+        final Cache<String, String> cache = cacheResource.getCache(executionContext);
         assertNotNull(cache);
         cacheResource.doStop();
-        final Cache cacheAfterDoStop = cacheResource.getCache(executionContext);
+        final Cache<String, String> cacheAfterDoStop = cacheResource.getCache(executionContext);
         assertNull(cacheAfterDoStop);
     }
 
-    private Element buildElement() {
-        return new Element() {
-            @Override
-            public Object key() {
-                return "foobar";
-            }
-
-            @Override
-            public Serializable value() {
-                return "value";
-            }
-
-            @Override
-            public int timeToLive() {
-                return 30;
-            }
-        };
+    private Element<String, String> buildElement() {
+        return new Element<>("foobar", "value", 30);
     }
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.resource.cache;
+package io.gravitee.resource.cache.hazelcast;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
@@ -24,7 +24,6 @@ import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.resource.cache.api.Cache;
 import io.gravitee.resource.cache.api.CacheResource;
 import io.gravitee.resource.cache.configuration.CacheResourceConfiguration;
-import io.gravitee.resource.cache.hazelcast.HazelcastDelegate;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -35,8 +34,7 @@ import org.springframework.context.ApplicationContextAware;
  */
 public class HazelcastCacheResource extends CacheResource<CacheResourceConfiguration> implements ApplicationContextAware {
 
-    private static final char KEY_SEPARATOR = '_';
-    private static final String MAP_PREFIX = "cache-resources" + KEY_SEPARATOR;
+    private static final String MAP_PREFIX = "cache-resources" + CacheResourceConfiguration.KEY_SEPARATOR;
 
     private HazelcastInstance hazelcastInstance;
     private ApplicationContext applicationContext;
@@ -49,7 +47,7 @@ public class HazelcastCacheResource extends CacheResource<CacheResourceConfigura
         super.doStart();
 
         final CacheResourceConfiguration configuration = configuration();
-        this.cacheId = MAP_PREFIX + configuration.getName() + KEY_SEPARATOR + UUID.random().toString();
+        this.cacheId = MAP_PREFIX + configuration.getName() + CacheResourceConfiguration.KEY_SEPARATOR + UUID.random().toString();
         this.hazelcastInstance = this.applicationContext.getBean(HazelcastInstance.class);
 
         buildCache();
@@ -59,12 +57,12 @@ public class HazelcastCacheResource extends CacheResource<CacheResourceConfigura
     protected void doStop() throws Exception {
         super.doStop();
         if (this.hazelcastDelegate != null) {
-            this.hazelcastDelegate.getNativeCache().destroy();
+            this.hazelcastDelegate.clear();
             this.hazelcastDelegate = null;
         }
     }
 
-    public Cache getCache(ExecutionContext executionContext) {
+    public <K, V> Cache<K, V> getCache(ExecutionContext executionContext) {
         return hazelcastDelegate;
     }
 
@@ -91,7 +89,7 @@ public class HazelcastCacheResource extends CacheResource<CacheResourceConfigura
             config.addMapConfig(resourceConfig);
         }
 
-        this.hazelcastDelegate = new HazelcastDelegate(hazelcastInstance.getMap(cacheId), (int) configuration().getTimeToLiveSeconds());
+        this.hazelcastDelegate = new HazelcastDelegate<>(hazelcastInstance.getMap(cacheId), (int) configuration().getTimeToLiveSeconds());
     }
 
     @Override
