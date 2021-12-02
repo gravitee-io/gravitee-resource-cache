@@ -21,7 +21,7 @@ import io.gravitee.resource.cache.api.*;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
-import org.springframework.util.Assert;
+import java.util.stream.Collectors;
 
 /**
  * @author Kamiel Ahmadpour (kamiel.ahmadpour at graviteesource.com)
@@ -31,9 +31,9 @@ public class StandaloneCache<K, V> implements Cache<K, V> {
 
     private final String name;
     private final int timeToLiveSeconds;
-    private final com.google.common.cache.Cache<K, V> internalCache;
+    private final com.google.common.cache.Cache<K, ValueWrapper<V>> internalCache;
     Map<UUID, CacheListener<K, V>> cacheListenerMap = new ConcurrentHashMap<>();
-    private final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "gio-standalone-cache"));
+    private static final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "gio-standalone-cache"));
 
     public StandaloneCache(String name, int timeToLiveSeconds) {
         this.name = name;
@@ -52,79 +52,85 @@ public class StandaloneCache<K, V> implements Cache<K, V> {
 
     @Override
     public int size() {
-        return ((Long) this.internalCache.size()).intValue();
+        return getNativeCache().size();
     }
 
     @Override
     public Map<K, V> getNativeCache() {
-        return this.internalCache.asMap();
+        return this.internalCache.asMap()
+            .entrySet()
+            .stream()
+            .filter(e -> e.getValue().expirationTimeMillis == 0 || System.currentTimeMillis() <= e.getValue().expirationTimeMillis)
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().value));
     }
 
     @Override
     public Element<K, V> get(K key) {
-        V value = internalCache.getIfPresent(key);
-        return (value == null) ? null : new Element<>(key, value);
+        ValueWrapper<V> vw = internalCache.getIfPresent(key);
+        if (vw != null) {
+            if (vw.expirationTimeMillis == 0) {
+                return new Element<>(key, vw.value);
+            } else if (System.currentTimeMillis() <= vw.expirationTimeMillis) {
+                vw.expirationTimeMillis = System.currentTimeMillis() + vw.timeToLiveMillis;
+                return new Element<>(key, vw.value);
+            } else {
+                this.internalCache.invalidate(key);
+                return null;
+            }
+        } else {
+            return null;
+        }
     }
 
     @Override
     public V put(Element<K, V> element) {
-        // TODO - Kamiel - 29/11/2021: There are so different checks needs to be done for validation the element key, valye, ttl
-        Assert.notNull(element, "Element can't be null");
         Verify.verify(
-            element.getTimeToLive() <= this.timeToLiveSeconds,
-            "Element time to live can't be bigger than time to live defined in the configuration"
+            TimeUnit.MILLISECONDS.convert(element.getTimeToLive(), TimeUnit.SECONDS) <=
+            TimeUnit.MILLISECONDS.convert(this.timeToLiveSeconds, TimeUnit.SECONDS),
+            "single ttl can't be bigger than ttl defined in the configuration"
         );
 
-        V currentValue = this.internalCache.getIfPresent(element.getKey());
+        Element<K, V> currentValue = this.get(element.getKey());
+        long ttlMillis = TimeUnit.MILLISECONDS.convert(element.getTimeToLive(), TimeUnit.SECONDS);
+        long expirationTimeMillis = ttlMillis != 0 ? System.currentTimeMillis() + ttlMillis : 0;
+        this.internalCache.put(element.getKey(), new ValueWrapper<>(element.getValue(), ttlMillis, expirationTimeMillis));
+
         executorService.execute(
             () -> {
                 if (currentValue == null) {
                     cacheListenerMap.forEach(
-                        (uuid, cacheListener) ->
-                            new EntryEvent<>(
-                                name,
-                                EntryEventType.ADDED,
-                                element.getKey(),
-                                get(element.getKey()).getValue(),
-                                element.getValue()
-                            )
+                        (uuid, cacheListener) -> new EntryEvent<>(name, EntryEventType.ADDED, element, null, element.getKey())
                     );
                 } else {
                     cacheListenerMap.forEach(
                         (uuid, cacheListener) ->
-                            new EntryEvent<>(
-                                name,
-                                EntryEventType.UPDATED,
-                                element.getKey(),
-                                get(element.getKey()).getValue(),
-                                element.getValue()
-                            )
+                            new EntryEvent<>(name, EntryEventType.UPDATED, element.getKey(), currentValue.getValue(), element.getValue())
                     );
                 }
             }
         );
 
-        this.internalCache.put(element.getKey(), element.getValue());
-        return currentValue;
+        return currentValue == null ? null : currentValue.getValue();
     }
 
     @Override
     public V evict(K key) {
+        Element<K, V> element = this.get(key);
+        this.internalCache.invalidate(key);
+
         executorService.execute(
             () ->
                 cacheListenerMap.forEach(
-                    (uuid, cacheListener) -> new EntryEvent<>(name, EntryEventType.REMOVED, key, get(key).getValue(), null)
+                    (uuid, cacheListener) -> new EntryEvent<>(name, EntryEventType.REMOVED, key, element.getValue(), null)
                 )
         );
-        V v = this.internalCache.getIfPresent(key);
-        this.internalCache.invalidate(key);
 
-        return v;
+        return element.getValue();
     }
 
     @Override
     public void clear() {
-        // TODO - Kamiel - 29/11/2021: Check id it is needed
+        this.internalCache.invalidateAll();
         getNativeCache()
             .forEach(
                 (key, value) ->
@@ -135,8 +141,6 @@ public class StandaloneCache<K, V> implements Cache<K, V> {
                             )
                     )
             );
-
-        this.internalCache.invalidateAll();
     }
 
     @Override
@@ -154,6 +158,19 @@ public class StandaloneCache<K, V> implements Cache<K, V> {
         } else {
             cacheListenerMap.remove(id);
             return true;
+        }
+    }
+
+    private static class ValueWrapper<T> {
+
+        private final T value;
+        private final long timeToLiveMillis;
+        private long expirationTimeMillis;
+
+        public ValueWrapper(T value, long timeToLiveMillis, long expirationTimeMillis) {
+            this.value = value;
+            this.timeToLiveMillis = timeToLiveMillis;
+            this.expirationTimeMillis = expirationTimeMillis;
         }
     }
 }
