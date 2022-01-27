@@ -29,7 +29,7 @@
 
     <groupId>io.gravitee.resource</groupId>
     <artifactId>gravitee-resource-cache</artifactId>
-    <version>1.7.0-SNAPSHOT</version>
+    <version>1.7.0</version>
 
     <name>Gravitee.io APIM - Resource - Cache</name>
     <description>The resource is used to maintain a cache and link it to the API lifecycle. It means that the cache is initialized when the API is starting and released when API is stopped.</description>
