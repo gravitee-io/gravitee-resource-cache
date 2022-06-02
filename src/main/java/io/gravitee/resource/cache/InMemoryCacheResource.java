@@ -16,7 +16,7 @@
 package io.gravitee.resource.cache;
 
 import io.gravitee.common.utils.UUID;
-import io.gravitee.gateway.api.ExecutionContext;
+import io.gravitee.gateway.reactive.api.context.ExecutionContext;
 import io.gravitee.node.api.cache.CacheConfiguration;
 import io.gravitee.node.api.cache.CacheManager;
 import io.gravitee.resource.cache.api.Cache;
@@ -63,7 +63,12 @@ public class InMemoryCacheResource extends CacheResource<CacheResourceConfigurat
     }
 
     @Override
-    public io.gravitee.resource.cache.api.Cache getCache(ExecutionContext executionContext) {
+    public io.gravitee.resource.cache.api.Cache getCache(ExecutionContext ctx) {
+        return this.cache;
+    }
+
+    @Override
+    public io.gravitee.resource.cache.api.Cache getCache(io.gravitee.gateway.api.ExecutionContext ctx) {
         return this.cache;
     }
 
