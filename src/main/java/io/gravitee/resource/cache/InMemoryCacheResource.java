@@ -16,7 +16,7 @@
 package io.gravitee.resource.cache;
 
 import io.gravitee.common.utils.UUID;
-import io.gravitee.gateway.reactive.api.context.ExecutionContext;
+import io.gravitee.gateway.jupiter.api.context.ExecutionContext;
 import io.gravitee.node.api.cache.CacheConfiguration;
 import io.gravitee.node.api.cache.CacheManager;
 import io.gravitee.resource.cache.api.Cache;
