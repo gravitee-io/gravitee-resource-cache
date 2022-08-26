@@ -26,10 +26,12 @@ import java.util.concurrent.TimeUnit;
 public class InMemoryCacheDelegate implements Cache {
 
     private final String name;
+    private final long timeToLiveSeconds;
     private final io.gravitee.node.api.cache.Cache wrapped;
 
-    public InMemoryCacheDelegate(final String name, final io.gravitee.node.api.cache.Cache wrapped) {
+    public InMemoryCacheDelegate(final String name, long timeToLiveSeconds, final io.gravitee.node.api.cache.Cache wrapped) {
         this.name = name;
+        this.timeToLiveSeconds = timeToLiveSeconds;
         this.wrapped = wrapped;
     }
 
@@ -65,7 +67,14 @@ public class InMemoryCacheDelegate implements Cache {
 
     @Override
     public void put(Element element) {
-        wrapped.put(element.key(), element.value(), element.timeToLive(), TimeUnit.SECONDS);
+        long timeToLive = this.timeToLiveSeconds;
+        if (
+            (timeToLive == 0 && element.timeToLive() > 0) ||
+            (timeToLive > 0 && element.timeToLive() > 0 && timeToLive > element.timeToLive())
+        ) {
+            timeToLive = element.timeToLive();
+        }
+        wrapped.put(element.key(), element.value(), timeToLive, TimeUnit.SECONDS);
     }
 
     @Override
