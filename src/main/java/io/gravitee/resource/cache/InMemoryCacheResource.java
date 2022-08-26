@@ -80,7 +80,12 @@ public class InMemoryCacheResource extends CacheResource<CacheResourceConfigurat
         configuration.setTimeToIdleSeconds((int) configuration().getTimeToIdleSeconds());
         configuration.setTimeToLiveSeconds((int) configuration().getTimeToLiveSeconds());
 
-        this.cache = new InMemoryCacheDelegate(cacheId, cacheManager.getOrCreateCache(cacheId, configuration));
+        this.cache =
+            new InMemoryCacheDelegate(
+                cacheId,
+                configuration().getTimeToLiveSeconds(),
+                cacheManager.getOrCreateCache(cacheId, configuration)
+            );
     }
 
     @Override
