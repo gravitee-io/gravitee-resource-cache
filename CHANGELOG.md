@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/gravitee-io/gravitee-resource-cache/compare/1.8.1...1.9.0) (2022-09-02)
+
+
+### Features
+
+* improve execution context structure ([f921c48](https://github.com/gravitee-io/gravitee-resource-cache/commit/f921c484f3a745b19d70d6f708b9203eaebe8d84)), closes [gravitee-io/issues#8386](https://github.com/gravitee-io/issues/issues/8386)
+
 ## [1.8.1](https://github.com/gravitee-io/gravitee-resource-cache/compare/1.8.0...1.8.1) (2022-08-29)
 
 
