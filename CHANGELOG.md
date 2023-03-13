@@ -1,3 +1,10 @@
+# [1.10.0-alpha.1](https://github.com/gravitee-io/gravitee-resource-cache/compare/1.9.0...1.10.0-alpha.1) (2023-03-13)
+
+
+### Features
+
+* rename 'jupiter' package in 'reactive' ([a314a3f](https://github.com/gravitee-io/gravitee-resource-cache/commit/a314a3f6468b019223e7dc8e23dc1f0fb4b8abe3))
+
 # [1.9.0](https://github.com/gravitee-io/gravitee-resource-cache/compare/1.8.1...1.9.0) (2022-09-02)
 
 
