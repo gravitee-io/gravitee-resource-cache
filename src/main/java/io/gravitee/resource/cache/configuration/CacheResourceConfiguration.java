@@ -16,11 +16,15 @@
 package io.gravitee.resource.cache.configuration;
 
 import io.gravitee.resource.api.ResourceConfiguration;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
+@Getter
+@Setter
 public class CacheResourceConfiguration implements ResourceConfiguration {
 
     public static final char KEY_SEPARATOR = '_';
@@ -31,36 +35,4 @@ public class CacheResourceConfiguration implements ResourceConfiguration {
     private long timeToLiveSeconds = 0;
 
     private long maxEntriesLocalHeap = 1000;
-
-    public long getMaxEntriesLocalHeap() {
-        return maxEntriesLocalHeap;
-    }
-
-    public void setMaxEntriesLocalHeap(long maxEntriesLocalHeap) {
-        this.maxEntriesLocalHeap = maxEntriesLocalHeap;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public long getTimeToIdleSeconds() {
-        return timeToIdleSeconds;
-    }
-
-    public void setTimeToIdleSeconds(long timeToIdleSeconds) {
-        this.timeToIdleSeconds = timeToIdleSeconds;
-    }
-
-    public long getTimeToLiveSeconds() {
-        return timeToLiveSeconds;
-    }
-
-    public void setTimeToLiveSeconds(long timeToLiveSeconds) {
-        this.timeToLiveSeconds = timeToLiveSeconds;
-    }
 }
