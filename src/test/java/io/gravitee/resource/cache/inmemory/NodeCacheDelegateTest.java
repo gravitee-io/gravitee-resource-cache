@@ -15,9 +15,12 @@
  */
 package io.gravitee.resource.cache.inmemory;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.gravitee.node.api.cache.Cache;
+import io.gravitee.resource.cache.NodeCacheDelegate;
 import io.gravitee.resource.cache.api.Element;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
@@ -26,13 +29,13 @@ import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class InMemoryCacheDelegateTest {
+public class NodeCacheDelegateTest {
 
     private static final int CACHE_TTL = 60;
-    private static String ELEMENT_KEY = "test-key";
-    private static String ELEMENT_VALUE = "test-value";
+    private static final String ELEMENT_KEY = "test-key";
+    private static final String ELEMENT_VALUE = "test-value";
 
-    private InMemoryCacheDelegate inMemoryCacheDelegate;
+    private NodeCacheDelegate inMemoryCacheDelegate;
 
     private Cache mockCache;
     private Element mockElement;
@@ -40,7 +43,7 @@ public class InMemoryCacheDelegateTest {
     @Before
     public void setup() {
         mockCache = mock(Cache.class);
-        inMemoryCacheDelegate = new InMemoryCacheDelegate("test-cache", CACHE_TTL, mockCache);
+        inMemoryCacheDelegate = new NodeCacheDelegate("test-cache", CACHE_TTL, mockCache);
         mockElement = mock(Element.class);
         when(mockElement.key()).thenReturn(ELEMENT_KEY);
         when(mockElement.value()).thenReturn(ELEMENT_VALUE);

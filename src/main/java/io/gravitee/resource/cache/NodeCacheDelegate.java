@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.resource.cache.inmemory;
+package io.gravitee.resource.cache;
 
 import io.gravitee.resource.cache.api.Cache;
 import io.gravitee.resource.cache.api.Element;
@@ -23,13 +23,13 @@ import java.util.concurrent.TimeUnit;
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class InMemoryCacheDelegate implements Cache {
+public class NodeCacheDelegate implements Cache {
 
     private final String name;
     private final long timeToLiveSeconds;
     private final io.gravitee.node.api.cache.Cache wrapped;
 
-    public InMemoryCacheDelegate(final String name, long timeToLiveSeconds, final io.gravitee.node.api.cache.Cache wrapped) {
+    public NodeCacheDelegate(final String name, long timeToLiveSeconds, final io.gravitee.node.api.cache.Cache wrapped) {
         this.name = name;
         this.timeToLiveSeconds = timeToLiveSeconds;
         this.wrapped = wrapped;

@@ -16,14 +16,12 @@
 package io.gravitee.resource.cache;
 
 import io.gravitee.common.utils.UUID;
-import io.gravitee.gateway.reactive.api.context.ExecutionContext;
 import io.gravitee.gateway.reactive.api.context.GenericExecutionContext;
 import io.gravitee.node.api.cache.CacheConfiguration;
 import io.gravitee.node.api.cache.CacheManager;
 import io.gravitee.resource.cache.api.Cache;
-import io.gravitee.resource.cache.api.CacheResource;
 import io.gravitee.resource.cache.configuration.CacheResourceConfiguration;
-import io.gravitee.resource.cache.inmemory.InMemoryCacheDelegate;
+import java.util.concurrent.TimeUnit;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -32,7 +30,9 @@ import org.springframework.context.ApplicationContextAware;
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class InMemoryCacheResource extends CacheResource<CacheResourceConfiguration> implements ApplicationContextAware {
+public class NodeCacheResource
+    extends io.gravitee.resource.cache.api.CacheResource<CacheResourceConfiguration>
+    implements ApplicationContextAware {
 
     private static final String MAP_PREFIX = "cache-resources" + CacheResourceConfiguration.KEY_SEPARATOR;
 
@@ -53,44 +53,42 @@ public class InMemoryCacheResource extends CacheResource<CacheResourceConfigurat
         buildCache();
     }
 
+    protected void buildCache() {
+        CacheConfiguration configuration = CacheConfiguration
+            .builder()
+            .distributed(true)
+            .maxSize(configuration().getMaxEntriesLocalHeap())
+            .timeToLiveInMs(TimeUnit.MILLISECONDS.convert(configuration().getTimeToLiveSeconds(), TimeUnit.SECONDS))
+            .timeToIdleInMs(TimeUnit.MILLISECONDS.convert(configuration().getTimeToLiveSeconds(), TimeUnit.SECONDS))
+            .build();
+        this.cache =
+            new NodeCacheDelegate(cacheId, configuration().getTimeToLiveSeconds(), cacheManager.getOrCreateCache(cacheId, configuration));
+    }
+
     @Override
     protected void doStop() throws Exception {
         super.doStop();
-        this.cacheManager.destroy(this.cacheId);
-        if (this.cache != null) {
-            this.cache.clear();
-            this.cache = null;
+        if (this.cacheManager != null) {
+            this.cacheManager.destroy(this.cacheId);
+            if (this.cache != null) {
+                this.cache.clear();
+                this.cache = null;
+            }
         }
     }
 
     @Override
-    public io.gravitee.resource.cache.api.Cache getCache(GenericExecutionContext ctx) {
+    public io.gravitee.resource.cache.api.Cache getCache(final GenericExecutionContext ctx) {
         return this.cache;
     }
 
     @Override
-    public io.gravitee.resource.cache.api.Cache getCache(io.gravitee.gateway.api.ExecutionContext ctx) {
+    public io.gravitee.resource.cache.api.Cache getCache(final io.gravitee.gateway.api.ExecutionContext ctx) {
         return this.cache;
     }
 
-    protected void buildCache() {
-        CacheConfiguration configuration = new CacheConfiguration();
-
-        configuration.setMaxSize(configuration().getMaxEntriesLocalHeap());
-
-        configuration.setTimeToIdleSeconds((int) configuration().getTimeToIdleSeconds());
-        configuration.setTimeToLiveSeconds((int) configuration().getTimeToLiveSeconds());
-
-        this.cache =
-            new InMemoryCacheDelegate(
-                cacheId,
-                configuration().getTimeToLiveSeconds(),
-                cacheManager.getOrCreateCache(cacheId, configuration)
-            );
-    }
-
     @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    public void setApplicationContext(final ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
     }
 }
