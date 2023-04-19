@@ -1,3 +1,10 @@
+# [1.10.0-alpha.2](https://github.com/gravitee-io/gravitee-resource-cache/compare/1.10.0-alpha.1...1.10.0-alpha.2) (2023-04-19)
+
+
+### Features
+
+* bump gravitee node version to use latest cache plugin ([170c4ab](https://github.com/gravitee-io/gravitee-resource-cache/commit/170c4ab52db9465155ca032e57e001807f46b317))
+
 # [1.10.0-alpha.1](https://github.com/gravitee-io/gravitee-resource-cache/compare/1.9.0...1.10.0-alpha.1) (2023-03-13)
 
 
