@@ -1,3 +1,15 @@
+# [2.0.0-alpha.1](https://github.com/gravitee-io/gravitee-resource-cache/compare/1.10.0-alpha.2...2.0.0-alpha.1) (2023-07-18)
+
+
+### chore
+
+* **deps:** update gravitee-parent ([876563a](https://github.com/gravitee-io/gravitee-resource-cache/commit/876563a1aa7d8f982f40f053e2417f7cf9a7847d))
+
+
+### BREAKING CHANGES
+
+* **deps:** require Java17
+
 # [1.10.0-alpha.2](https://github.com/gravitee-io/gravitee-resource-cache/compare/1.10.0-alpha.1...1.10.0-alpha.2) (2023-04-19)
 
 
