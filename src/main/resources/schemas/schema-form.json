@@ -1,6 +1,6 @@
 {
     "type": "object",
-    "id": "urn:jsonschema:io:gravitee:resource:cache:configuration:CacheResourceConfiguration",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "properties": {
         "name": {
             "title": "Cache name",
@@ -30,5 +30,5 @@
             "minimum": 0
         }
     },
-    "required": ["name", "timeToIdleSeconds", "timeToLiveSeconds", "maxEntriesLocalHeap", "timeToLiveSeconds"]
+    "required": ["name", "timeToIdleSeconds", "maxEntriesLocalHeap", "timeToLiveSeconds"]
 }
