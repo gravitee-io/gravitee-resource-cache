@@ -28,7 +28,6 @@ import lombok.Setter;
 public class CacheResourceConfiguration implements ResourceConfiguration {
 
     public static final char KEY_SEPARATOR = '_';
-    private String name = "my-cache";
 
     private long timeToIdleSeconds = 0;
 
