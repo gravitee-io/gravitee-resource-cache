@@ -47,7 +47,7 @@ public class NodeCacheResource
         super.doStart();
 
         final CacheResourceConfiguration configuration = configuration();
-        this.cacheId = MAP_PREFIX + configuration.getName() + CacheResourceConfiguration.KEY_SEPARATOR + UUID.random().toString();
+        this.cacheId = MAP_PREFIX + "gravitee" + CacheResourceConfiguration.KEY_SEPARATOR + UUID.random().toString();
         this.cacheManager = this.applicationContext.getBean(CacheManager.class);
 
         buildCache();
