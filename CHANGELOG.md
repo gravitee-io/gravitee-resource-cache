@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/gravitee-io/gravitee-resource-cache/compare/2.0.0...2.1.0) (2024-07-12)
+
+
+### Features
+
+* rework schema-form to use new GioJsonSchema Ui component ([3be0a57](https://github.com/gravitee-io/gravitee-resource-cache/commit/3be0a5797fea8f04b540c605289c1ddb223ba19a))
+
 # [2.0.0](https://github.com/gravitee-io/gravitee-resource-cache/compare/1.9.0...2.0.0) (2023-07-18)
 
 
