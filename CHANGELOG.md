@@ -1,3 +1,15 @@
+# [3.0.0-alpha.1](https://github.com/gravitee-io/gravitee-resource-cache/compare/2.1.0...3.0.0-alpha.1) (2024-11-12)
+
+
+### Features
+
+* update cache provider api ([8b79b01](https://github.com/gravitee-io/gravitee-resource-cache/commit/8b79b0162a35f51e10a5a8a22b160341d42a9dbd))
+
+
+### BREAKING CHANGES
+
+* requires gravitee-gateway-api 3.9.0+ & resource-cache-provider-api 2.0.0+
+
 # [2.1.0](https://github.com/gravitee-io/gravitee-resource-cache/compare/2.0.0...2.1.0) (2024-07-12)
 
 
