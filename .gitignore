@@ -17,6 +17,9 @@ hs_err_pid*
 # Idea files
 /.idea/
 /*.iml
+
+.DS_Store
+
 # -- Cicd : Git ignore the [.circleci/**/*] which contains
 # files which do not need to be commited (password to artifactory)
 .circleci/**/*
