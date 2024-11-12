@@ -17,6 +17,7 @@ package io.gravitee.resource.cache;
 
 import io.gravitee.common.utils.UUID;
 import io.gravitee.gateway.reactive.api.context.GenericExecutionContext;
+import io.gravitee.gateway.reactive.api.context.base.BaseExecutionContext;
 import io.gravitee.node.api.cache.CacheConfiguration;
 import io.gravitee.node.api.cache.CacheManager;
 import io.gravitee.resource.cache.api.Cache;
@@ -79,6 +80,11 @@ public class NodeCacheResource
 
     @Override
     public io.gravitee.resource.cache.api.Cache getCache(final GenericExecutionContext ctx) {
+        return this.cache;
+    }
+
+    @Override
+    public Cache getCache(BaseExecutionContext ctx) {
         return this.cache;
     }
 
