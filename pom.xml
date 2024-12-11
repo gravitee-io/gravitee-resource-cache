@@ -41,7 +41,7 @@
         <gravitee-resource-api.version>1.1.0</gravitee-resource-api.version>
         <gravitee-gateway-api.version>3.8.1</gravitee-gateway-api.version>
         <gravitee-resource-cache-provider-api.version>1.4.0</gravitee-resource-cache-provider-api.version>
-        <gravitee-node.version>4.8.8</gravitee-node.version>
+        <gravitee-node.version>4.8.9</gravitee-node.version>
 
         <maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version>
         <properties-maven-plugin.version>1.2.1</properties-maven-plugin.version>
