@@ -1,3 +1,10 @@
+# [3.1.0](https://github.com/gravitee-io/gravitee-resource-cache/compare/3.0.0...3.1.0) (2026-06-10)
+
+
+### Features
+
+* **cache:** validate async cache API for in-memory resource ([7e17db5](https://github.com/gravitee-io/gravitee-resource-cache/commit/7e17db51297c7f5b4b1fa3b4ba022404dfc730fd))
+
 # [3.0.0](https://github.com/gravitee-io/gravitee-resource-cache/compare/2.1.0...3.0.0) (2024-12-30)
 
 
