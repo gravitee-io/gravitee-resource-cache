@@ -55,15 +55,17 @@ public class NodeCacheResource
     }
 
     protected void buildCache() {
-        CacheConfiguration configuration = CacheConfiguration
-            .builder()
+        CacheConfiguration configuration = CacheConfiguration.builder()
             .distributed(true)
             .maxSize(configuration().getMaxEntriesLocalHeap())
             .timeToLiveInMs(TimeUnit.MILLISECONDS.convert(configuration().getTimeToLiveSeconds(), TimeUnit.SECONDS))
             .timeToIdleInMs(TimeUnit.MILLISECONDS.convert(configuration().getTimeToLiveSeconds(), TimeUnit.SECONDS))
             .build();
-        this.cache =
-            new NodeCacheDelegate(cacheId, configuration().getTimeToLiveSeconds(), cacheManager.getOrCreateCache(cacheId, configuration));
+        this.cache = new NodeCacheDelegate(
+            cacheId,
+            configuration().getTimeToLiveSeconds(),
+            cacheManager.getOrCreateCache(cacheId, configuration)
+        );
     }
 
     @Override
