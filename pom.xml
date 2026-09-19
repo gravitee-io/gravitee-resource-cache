@@ -43,7 +43,6 @@
         <gravitee-node.version>7.26.5</gravitee-node.version>
         <gravitee-resource-cache-provider-api.version>2.2.0</gravitee-resource-cache-provider-api.version>
 
-        <maven-assembly-plugin.version>3.8.0</maven-assembly-plugin.version>
         <properties-maven-plugin.version>1.3.0</properties-maven-plugin.version>
 
         <!-- Property used by the publication job in CI-->
@@ -157,7 +156,6 @@
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>${maven-assembly-plugin.version}</version>
                 <configuration>
                     <appendAssemblyId>false</appendAssemblyId>
                     <descriptors>
