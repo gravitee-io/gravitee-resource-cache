@@ -66,3 +66,14 @@ You can configure the resource with the following options :
     }
 }
 ----
+
+== Compatibility matrix
+
+|===
+| Plugin version | APIM            | Java version
+
+| 4.x            | 4.9.x to latest | 21
+| 3.x            | 4.9.x to latest | 17
+|===
+
+The *Java version* column is the bytecode level of the latest release of each line, which sets the minimum runtime able to load the artifact.
