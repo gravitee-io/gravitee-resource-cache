@@ -1,3 +1,16 @@
+# [4.0.0](https://github.com/gravitee-io/gravitee-resource-cache/compare/3.1.0...4.0.0) (2026-09-22)
+
+
+* chore(deps)!: move to the gravitee orb 5 and parent 24 ([ab3e19f](https://github.com/gravitee-io/gravitee-resource-cache/commit/ab3e19fdabd0418db5859f031b31fd3cb3ddd38f))
+
+
+### BREAKING CHANGES
+
+* the artifact is now compiled for Java 21, up from Java 17, and
+requires a Java 21 runtime or later.
+
+https://gravitee.atlassian.net/browse/BX-403
+
 # [3.1.0](https://github.com/gravitee-io/gravitee-resource-cache/compare/3.0.0...3.1.0) (2026-06-10)
 
 
